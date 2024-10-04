@@ -8,12 +8,13 @@ const config = {
   host: process.env.IMAP_HOST,
   port: parseInt(process.env.IMAP_PORT, 10),
   tls: process.env.IMAP_TLS === "true",
+  // debug: console.log,
 };
 
 const imap = new Imap(config);
 
-function openMailbox(mailbox, cb) {
-  imap.openBox(mailbox, true, cb);
+function openMailbox(mailbox, readOnly, cb) {
+  imap.openBox(mailbox, readOnly, cb);
 }
 
 function fetchMessages(searchCriteria, numMessages) {
@@ -38,8 +39,6 @@ function fetchMessages(searchCriteria, numMessages) {
 
     f.on("message", function (msg, seqno) {
       let header = "";
-      let body = "";
-      let isHtml = false;
       let bodyParts = [];
 
       console.log(`Message #${seqno}`);
@@ -67,40 +66,17 @@ function fetchMessages(searchCriteria, numMessages) {
               `Date: ${parsedHeader.date ? parsedHeader.date[0] : "N/A"}`
             );
           } else {
-          
             bodyParts.push(buffer);
-            const contentTypeMatch = buffer.match(/Content-Type:\s*([^;]+)/);
-            if (contentTypeMatch) {
-              isHtml = contentTypeMatch[1].toLowerCase() === "text/html";
-            }
           }
         });
       });
 
       msg.once("attributes", function (attrs) {
-        const structure = attrs.struct;
-
-        if (structure && structure.length > 1) {
-          let multipartBody = "";
-          structure.forEach((part) => {
-            if (part.body && part.body.type === "TEXT") {
-              multipartBody += bodyParts.join("");
-            }
-          });
-
-          
-          const lines = multipartBody.split("\n").slice(0, 2).join("\n");
-          console.log("Body (first 2 lines):");
-          console.log(lines);
-          console.log("---");
-        } else {
-          
-          const fullBody = bodyParts.join("");
-          const lines = fullBody.split("\n").slice(0, 2).join("\n");
-          console.log("Body (first 2 lines):");
-          console.log(lines);
-          console.log("---");
-        }
+        const fullBody = bodyParts.join("");
+        const lines = fullBody.split("\n").slice(0, 2).join("\n");
+        console.log("Body (first 2 lines):");
+        console.log(lines);
+        console.log("---");
       });
     });
 
@@ -140,7 +116,7 @@ function fetchAndProcessMessages(
   }
 
   imap.once("ready", function () {
-    openMailbox(mailbox, (err) => {
+    openMailbox(mailbox, true, (err) => {
       if (err) {
         console.error("Open mailbox error:", err);
         imap.end();
@@ -174,7 +150,91 @@ function all(startDateStr, endDateStr) {
   );
 }
 
+function readOnDate(dateStr) {
+  const searchCriteria = [["ON", format(new Date(dateStr), "dd-MMM-yyyy")]];
+
+  imap.once("ready", function () {
+    openMailbox("INBOX", true, (err) => {
+      if (err) {
+        console.error("Open mailbox error:", err);
+        imap.end();
+        return;
+      }
+      fetchMessages(searchCriteria, Number.MAX_SAFE_INTEGER);
+    });
+  });
+
+  imap.once("error", function (err) {
+    console.error("Connection error:", err);
+  });
+
+  imap.once("end", function () {
+    console.log("Connection ended.");
+  });
+
+  imap.connect();
+}
+
+function starEmail(seqNo) {
+  imap.once("ready", function () {
+    openMailbox("INBOX", false, (err) => {
+      if (err) {
+        console.error("Open mailbox error:", err);
+        imap.end();
+        return;
+      }
+
+      imap.addFlags(seqNo, ["\\Flagged"], function (err) {
+        if (err) {
+          console.error("Error starring message:", err);
+        } else {
+          console.log(`Message #${seqNo} has been starred.`);
+        }
+        imap.end();
+      });
+    });
+  });
+
+  imap.once("error", function (err) {
+    console.error("Connection error:", err);
+  });
+
+  imap.once("end", function () {
+    console.log("Connection ended.");
+  });
+
+  imap.connect();
+}
+
+function fetchStarredEmails() {
+  imap.once("ready", function () {
+    openMailbox("INBOX", true, (err) => {
+      if (err) {
+        console.error("Open mailbox error:", err);
+        imap.end();
+        return;
+      }
+
+      const searchCriteria = [["FLAGGED"]];
+      fetchMessages(searchCriteria, Number.MAX_SAFE_INTEGER);
+    });
+  });
+
+  imap.once("error", function (err) {
+    console.error("Connection error:", err);
+  });
+
+  imap.once("end", function () {
+    console.log("Connection ended.");
+  });
+
+  imap.connect();
+}
+
 module.exports = {
   latest,
   all,
+  readOnDate,
+  starEmail,
+  fetchStarredEmails,
 };

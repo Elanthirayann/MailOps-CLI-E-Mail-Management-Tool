@@ -37,17 +37,37 @@ if (command === "send") {
         require("./read").all();
       } else {
         console.log("Usage: read all [<start-date> <end-date>]");
-        console.log("Date format: YYYY-MM-DD");
         process.exit(1);
       }
       break;
 
+    case "ondate":
+      if (subArgs.length === 1 && validateDate(subArgs[0])) {
+        require("./read").readOnDate(subArgs[0]);
+      } else {
+        console.log("Usage: read ondate <date>");
+        process.exit(1);
+      }
+      break;
+
+    case "star":
+      if (subArgs.length === 1 && !isNaN(subArgs[0])) {
+        require("./read").starEmail(parseInt(subArgs[0], 10));
+      } else {
+        console.log("Usage: read star <message-sequence-number>");
+        process.exit(1);
+      }
+      break;
+
+    case "starred":
+      require("./read").fetchStarredEmails();
+      break;
+
     default:
-      console.log(
-        "Usage: read [latest <number-of-messages> | all [<start-date> <end-date>]]"
-      );
+      console.log("Unknown command.");
       process.exit(1);
   }
 } else {
-  console.log("Usage: [send|read] [arguments]");
+  console.log("Unknown command.");
+  process.exit(1);
 }
