@@ -1,3 +1,4 @@
+// read.js
 const Imap = require("node-imap");
 const { format } = require("date-fns");
 require("dotenv").config();
@@ -8,7 +9,6 @@ const config = {
   host: process.env.IMAP_HOST,
   port: parseInt(process.env.IMAP_PORT, 10),
   tls: process.env.IMAP_TLS === "true",
-  // debug: console.log,
 };
 
 const imap = new Imap(config);
@@ -231,10 +231,79 @@ function fetchStarredEmails() {
   imap.connect();
 }
 
+function markAsRead(seqNo, readStatus) {
+  imap.once("ready", function () {
+    openMailbox("INBOX", false, (err) => {
+      if (err) {
+        console.error("Open mailbox error:", err);
+        imap.end();
+        return;
+      }
+
+      const flag = readStatus ? "\\Seen" : "\\Unseen";
+      imap.addFlags(seqNo, [flag], function (err) {
+        if (err) {
+          console.error(
+            `Error marking message #${seqNo} as ${
+              readStatus ? "read" : "unread"
+            }:`,
+            err
+          );
+        } else {
+          console.log(
+            `Message #${seqNo} has been marked as ${
+              readStatus ? "read" : "unread"
+            }.`
+          );
+        }
+        imap.end();
+      });
+    });
+  });
+
+  imap.once("error", function (err) {
+    console.error("Connection error:", err);
+  });
+
+  imap.once("end", function () {
+    console.log("Connection ended.");
+  });
+
+  imap.connect();
+}
+
+function searchBySender(senderEmail) {
+  imap.once("ready", function () {
+    openMailbox("INBOX", true, (err) => {
+      if (err) {
+        console.error("Open mailbox error:", err);
+        imap.end();
+        return;
+      }
+
+      const searchCriteria = [["FROM", senderEmail]];
+      fetchMessages(searchCriteria, Number.MAX_SAFE_INTEGER);
+    });
+  });
+
+  imap.once("error", function (err) {
+    console.error("Connection error:", err);
+  });
+
+  imap.once("end", function () {
+    console.log("Connection ended.");
+  });
+
+  imap.connect();
+}
+
+// Export the functions
 module.exports = {
   latest,
   all,
   readOnDate,
   starEmail,
   fetchStarredEmails,
+  markAsRead,
+  searchBySender,
 };

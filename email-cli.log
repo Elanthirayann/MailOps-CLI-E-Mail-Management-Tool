@@ -1,0 +1,6 @@
+[2024-11-06T07:37:41.998Z] - Sent email to recipient@example.com,Test Subject,Test Body,path/to/attachment1.jpg,path/to/attachment2.pdf with subject "undefined"
+[2024-11-06T08:25:52.296Z] - Error sending email to recipient@example.com with subject "Test Subject": ENOENT: no such file or directory, open 'C:\Users\elant\OneDrive\Desktop\email-cli-tool\path\to\attachment'
+[2024-11-06T08:26:16.375Z] - Sent email to recipient@example.com with subject "Test Subject"
+[2024-11-06T08:32:35.729Z] - Sent email to recipient@example.com with subject "Test Subject"
+[2024-11-06T08:36:36.030Z] - Sent email to elanthirayan27@gmail.com with subject "Test Subject"
+[2024-11-06T08:59:10.884Z] - Sent email to elanthirayan27@gmail.com with subject "Test Subject"

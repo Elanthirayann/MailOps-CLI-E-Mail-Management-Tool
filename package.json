@@ -16,6 +16,7 @@
     "imap": "^0.8.19",
     "mailparser": "^3.7.1",
     "node-imap": "^0.9.6",
+    "node-notifier": "^10.0.1",
     "nodemailer": "^6.9.15"
   }
 }
